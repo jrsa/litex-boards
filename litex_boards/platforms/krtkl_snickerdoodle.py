@@ -552,10 +552,19 @@ class Platform(Xilinx7SeriesPlatform):
     default_clk_freq   = 100e6
 
     def __init__(self, variant="z7-10", toolchain="vivado"):
-        device = {
-            "z7-10": "xc7z010-clg400-1",
-            "z7-20": "xc7z020-clg400-3"
-        }[variant]
+        if toolchain == 'vivado':
+            device = {
+                "z7-10": "xc7z010-clg400-1",
+                "z7-20": "xc7z020-clg400-3"
+            }[variant]
+        elif toolchain in ('openxc7', 'yosys+nextpnr'):
+            device = {
+                "z7-10": "xc7z010clg400-1",
+                "z7-20": "xc7z020clg400-3"
+            }[variant]
+        else:
+            raise RuntimeError(f'unsupported toolchain: {toolchain}')
+
         Xilinx7SeriesPlatform.__init__(self, device, _io,  _connectors, toolchain=toolchain)
         self.ps7_config = ps7_config
         self.default_clk_period = 1e9 / self.default_clk_freq

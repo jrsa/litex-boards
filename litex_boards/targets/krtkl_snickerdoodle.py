@@ -78,7 +78,7 @@ class BaseSoC(SoCCore):
     def __init__(self, variant="z7-20", toolchain="vivado", sys_clk_freq=125e6,
             with_led_chaser = True,
             **kwargs):
-        platform = krtkl_snickerdoodle.Platform(variant=variant, toolchain=toolchain)
+        platform = krtkl_snickerdoodle.Platform(variant=variant, toolchain=kwargs['toolchain'])
 
         # CRG --------------------------------------------------------------------------------------
         use_ps7_clk = (kwargs.get("cpu_type", None) == "zynq7000")
