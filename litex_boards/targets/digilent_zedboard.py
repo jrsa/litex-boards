@@ -52,7 +52,7 @@ class _CRG(LiteXModule):
 class BaseSoC(SoCCore):
 
     def __init__(self, sys_clk_freq=100e6, with_led_chaser=True, **kwargs):
-        platform = digilent_zedboard.Platform()
+        platform = digilent_zedboard.Platform(toolchain=kwargs['toolchain'])
 
         # CRG --------------------------------------------------------------------------------------
         use_ps7_clk = (kwargs.get("cpu_type", None) == "zynq7000")
@@ -145,6 +145,7 @@ def main():
 
     soc = BaseSoC(
         sys_clk_freq = args.sys_clk_freq,
+        toolchain=args.toolchain,
         **parser.soc_argdict
     )
     builder = Builder(soc, **parser.builder_argdict)

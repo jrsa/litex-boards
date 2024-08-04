@@ -20,6 +20,7 @@ from litex.soc.interconnect import wishbone
 
 from litex.soc.cores.clock import *
 from litex.soc.integration.soc_core import *
+from litex.soc.integration.soc import SoCRegion
 from litex.soc.integration.builder import *
 from litex.soc.cores.led import LedChaser
 
@@ -68,7 +69,7 @@ class BaseSoC(SoCCore):
         ext_clk_freq    = None,
         xci_file        = None,
         **kwargs):
-        platform = krtkl_snickerdoodle.Platform(variant=variant)
+        platform = krtkl_snickerdoodle.Platform(variant=variant, toolchain=kwargs['toolchain'])
 
         # CRG --------------------------------------------------------------------------------------
         if ext_clk_freq:
@@ -81,11 +82,37 @@ class BaseSoC(SoCCore):
         if kwargs.get("cpu_type", None) == "zynq7000":
             kwargs["integrated_sram_size"] = 0
             kwargs["with_uart"]            = False
+            #self.mem_map = {"csr": 0x4000_0000}  # Zynq GP0 default
+            self.mem_map["csr"]  = 0x4000_0000  # Zynq GP0 default
         SoCCore.__init__(self, platform, sys_clk_freq, ident="LiteX SoC on Snickerdoodle", **kwargs)
 
         # Zynq7000 Integration ---------------------------------------------------------------------
         if kwargs.get("cpu_type", None) == "zynq7000":
-            load_ps7(self, xci_file)
+            # james note: i am modifying this according to be more similar to the zedboard target
+            # note 2: i hacked the zynq9000 cpu definition to not care about the name and preset since those are
+            # only relevant to vivado
+            self.cpu.set_ps7(name="Zynq",
+                             preset="ZedBoard",
+                             config={'PCW_FPGA0_PERIPHERAL_FREQMHZ': sys_clk_freq / 1e6})
+
+            # Connect AXI GP0 to the SoC
+            wb_gp0 = wishbone.Interface()
+            self.submodules += axi.AXI2Wishbone(
+                axi          = self.cpu.add_axi_gp_master(),
+                wishbone     = wb_gp0,
+                base_address = self.mem_map["csr"])
+            self.bus.add_master(master=wb_gp0)
+
+            self.bus.add_region("sram", SoCRegion(
+                origin = self.cpu.mem_map["sram"],
+                size   = 512 * 1024 * 1024 - self.cpu.mem_map["sram"])
+            )
+            self.bus.add_region("rom", SoCRegion(
+                origin = self.cpu.mem_map["rom"],
+                size   = 256 * 1024 * 1024 // 8,
+                linker = True)
+            )
+            self.constants["CONFIG_CLOCK_FREQUENCY"] = 666666687
 
         # Leds -------------------------------------------------------------------------------------
         if with_led_chaser:
@@ -110,6 +137,7 @@ def main():
         sys_clk_freq = args.sys_clk_freq,
         ext_clk_freq = args.ext_clk_freq,
         xci_file     = args.xci_file,
+        toolchain    = args.toolchain,
         **parser.soc_argdict
     )
     builder = Builder(soc, **parser.builder_argdict)
