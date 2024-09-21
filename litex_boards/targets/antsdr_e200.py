@@ -28,6 +28,8 @@ from litex.soc.integration.soc import SoCRegion
 from litex.soc.integration.builder import *
 from litex.soc.cores.led import LedChaser
 
+from liteeth.phy.s7rgmii import LiteEthPHYRGMII
+
 # CRG ----------------------------------------------------------------------------------------------
 
 
@@ -35,24 +37,46 @@ class _CRG(LiteXModule):
     def __init__(self, platform, sys_clk_freq, use_ps7_clk=False):
         self.rst    = Signal()
         self.cd_sys = ClockDomain()
+        self.cd_idelay = ClockDomain()
 
         # # #
 
         if use_ps7_clk:
             self.comb += ClockSignal("sys").eq(ClockSignal("ps7"))
             self.comb += ResetSignal("sys").eq(ResetSignal("ps7") | self.rst)
-        else:
-            # Clk.
-            # this doesnt exist
-            clk125 = platform.request("clk125") 
+        #if True:  # stuff for ethernet phy clock, overlaps with NOT ps7 block below
+            # s7rgmii needs this because it uses IDELAY blocks
+            self.pll = pll = S7MMCM(speedgrade=-2)
+            self.comb += pll.reset.eq(self.rst)
 
-            # PLL.
+            #clk40 = platform.request("clk40")
+            #pll.register_clkin(clk40, 40e6)
+            pll.register_clkin(self.cd_sys.clk, 100e6)
+            pll.create_clkout(self.cd_idelay, 200e6)
+
+            self.idelayctrl = S7IDELAYCTRL(self.cd_idelay)
+    
+        else:
+            #raise RuntimeError("only PS7 clock is supported for system clock at the moment")
+
+            ## this doesnt exist
+            #clk125 = platform.request("clk125") 
+
+            # i tried to make this work but
+            clk40 = platform.request("clk40")
+            #eth_rst_n = platform.request("eth_rst_n") # lol this is already hooked up in the liteeth phy
+            #self.comb += eth_rst_n.eq(1)
+
+            ## PLL.
             self.pll = pll = S7PLL(speedgrade=-1)
             self.comb += pll.reset.eq(self.rst)
-            pll.register_clkin(clk125, 125e6)
+            pll.register_clkin(clk40, 40e6)
             pll.create_clkout(self.cd_sys, sys_clk_freq)
+            pll.create_clkout(self.cd_idelay, 200e6)
             # Ignore sys_clk to pll.clkin path created by SoC's rst.
             platform.add_false_path_constraints(self.cd_sys.clk, pll.clkin)
+            self.idelayctrl = S7IDELAYCTRL(self.cd_idelay)
+
 
 # BaseSoC ------------------------------------------------------------------------------------------
 
@@ -62,6 +86,7 @@ class BaseSoC(SoCCore):
             with_led_chaser = True,
             with_ethernet = False,
             with_etherbone = False,
+            eth_ip = "192.168.1.50",
             **kwargs):
         platform = antsdr_e200.Platform(toolchain=toolchain)
 
@@ -101,10 +126,11 @@ class BaseSoC(SoCCore):
             self.bus.add_region("flash",  SoCRegion(origin=0xFC00_0000, size=0x4_0000, mode="rwx"))
 
         # Ethernet ---------------------------------------------------------------------------------
+        # not working currently
         if with_ethernet or with_etherbone:
             self.ethphy = LiteEthPHYRGMII(
-                clock_pads = self.platform.request("eth_clocks", eth_phy),
-                pads       = self.platform.request("eth", eth_phy),
+                clock_pads = self.platform.request("eth_clocks"),
+                pads       = self.platform.request("eth"),
                 tx_delay   = 0e-9)
             if with_ethernet:
                 self.add_ethernet(phy=self.ethphy, data_width=32)
@@ -188,9 +214,11 @@ def main():
     parser = LiteXArgumentParser(platform=antsdr_e200.Platform, description="LiteX SoC on ANTSDR E200")
     parser.add_target_argument("--variant",      default="z7-20",           help="Board variant (z7-20 or z7-10).")
     parser.add_target_argument("--sys-clk-freq", default=100e6, type=float, help="System clock frequency.")
+    parser.add_target_argument("--with-uart",  action="store_true", help="You want a UART... right?")
     ethopts = parser.target_group.add_mutually_exclusive_group()
     ethopts.add_argument("--with-ethernet",  action="store_true", help="Enable Ethernet support.")
     ethopts.add_argument("--with-etherbone", action="store_true", help="Enable Etherbone support.")
+    parser.add_target_argument("--eth-ip",            default="192.168.1.50", help="Ethernet/Etherbone IP address.")
     parser.set_defaults(cpu_type="zynq7000")
     parser.set_defaults(no_uart=True)
     args = parser.parse_args()
@@ -199,6 +227,9 @@ def main():
         variant      = args.variant,
         toolchain    = args.toolchain,
         sys_clk_freq = args.sys_clk_freq,
+        with_ethernet          = args.with_ethernet,
+        with_etherbone         = args.with_etherbone,
+        eth_ip           = args.eth_ip,
         **parser.soc_argdict
     )
     builder = Builder(soc, **parser.builder_argdict)

@@ -10,7 +10,7 @@ from litex.build.xilinx import Xilinx7SeriesPlatform, VivadoProgrammer
 # IOs ----------------------------------------------------------------------------------------------
 
 _io = [
-    ("clk40", 0, Pins("K17"), IOStandard("LVCMOS33")),
+    ("clk40", 0, Pins("K17"), IOStandard("LVCMOS18")),
 
     # PS7
     ("ps7_clk",   0, Pins(1)),
@@ -42,7 +42,7 @@ _io = [
     ("eth_clocks", 0,
         Subsignal("tx", Pins("D18")),
         Subsignal("rx", Pins("H16")),
-        IOStandard("LVCMOS33"),
+        IOStandard("LVCMOS18"),
     ),
     ("eth", 0,
         Subsignal("rst_n",   Pins("B19")),
@@ -52,10 +52,16 @@ _io = [
         Subsignal("rx_data", Pins("F16 E17 E19 E18")),
         Subsignal("tx_ctl",  Pins("F20")),
         Subsignal("tx_data", Pins("F19 D20 D19 C20")),
-        IOStandard("LVCMOS33")
+        IOStandard("LVCMOS18")
     ),
     # have one led hooked up to the first gpio
     ("led", 0, Pins("V5"), IOStandard("LVCMOS33")),
+
+    ("serial", 0,
+        Subsignal("tx", Pins("U7")),
+        Subsignal("rx", Pins("V7")),
+        IOStandard("LVCMOS33")
+    ),
 ]
 
 ps7_config = {
@@ -98,7 +104,6 @@ ps7_config = {
 }
 
 # Connectors ---------------------------------------------------------------------------------------
-# this thing is ghey
 _connectors = [
 #    ("gpio", "V5 U7 V7 T9 U10 Y7 Y6 Y6"),
 ]
@@ -111,7 +116,7 @@ class Platform(Xilinx7SeriesPlatform):
     default_clk_freq   = 100e6
 
     def __init__(self, toolchain="vivado"):
-        device = "xc7z020-clg400-3"
+        device = "xc7z020-clg400-2"
         Xilinx7SeriesPlatform.__init__(self, device, _io,  _connectors, toolchain=toolchain)
         self.ps7_config = ps7_config
         self.default_clk_period = 1e9 / self.default_clk_freq
