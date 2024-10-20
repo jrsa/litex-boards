@@ -105,15 +105,15 @@ class BaseSoC(SoCCore):
 
             self.bus.add_region("sram", SoCRegion(
                 origin = self.cpu.mem_map["sram"],
-                size   = 512 * MEGABYTE - self.cpu.mem_map["sram"])
+                size   = 192000)
             )
-            self.bus.add_region("rom", SoCRegion(
-                origin = self.cpu.mem_map["rom"],
-                size   = 256 * MEGABYTE // 8,
-                linker = True)
-            )
-            self.constants["CONFIG_CLOCK_FREQUENCY"] = 666666687
-            self.bus.add_region("flash",  SoCRegion(origin=0xFC00_0000, size=0x4_0000, mode="rwx"))
+            #self.bus.add_region("rom", SoCRegion(
+            #    origin = self.cpu.mem_map["rom"],
+            #    size   = 256 * MEGABYTE // 8,
+            #    linker = True)
+            #)
+            self.constants["CONFIG_CLOCK_FREQUENCY"] = 666666687 # not correct for 7020
+            #self.bus.add_region("flash",  SoCRegion(origin=0xFC00_0000, size=0x4_0000, mode="rwx"))
 
         # Leds -------------------------------------------------------------------------------------
         if with_led_chaser:

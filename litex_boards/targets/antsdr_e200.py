@@ -44,18 +44,6 @@ class _CRG(LiteXModule):
         if use_ps7_clk:
             self.comb += ClockSignal("sys").eq(ClockSignal("ps7"))
             self.comb += ResetSignal("sys").eq(ResetSignal("ps7") | self.rst)
-        #if True:  # stuff for ethernet phy clock, overlaps with NOT ps7 block below
-            # s7rgmii needs this because it uses IDELAY blocks
-            self.pll = pll = S7MMCM(speedgrade=-2)
-            self.comb += pll.reset.eq(self.rst)
-
-            #clk40 = platform.request("clk40")
-            #pll.register_clkin(clk40, 40e6)
-            pll.register_clkin(self.cd_sys.clk, 100e6)
-            pll.create_clkout(self.cd_idelay, 200e6)
-
-            self.idelayctrl = S7IDELAYCTRL(self.cd_idelay)
-    
         else:
             #raise RuntimeError("only PS7 clock is supported for system clock at the moment")
 
@@ -77,6 +65,18 @@ class _CRG(LiteXModule):
             platform.add_false_path_constraints(self.cd_sys.clk, pll.clkin)
             self.idelayctrl = S7IDELAYCTRL(self.cd_idelay)
 
+        if True:  # stuff for ethernet phy clock, overlaps with NOT ps7 block above
+            # s7rgmii needs this because it uses IDELAY blocks
+            self.pll = pll = S7MMCM(speedgrade=-2)
+            self.comb += pll.reset.eq(self.rst)
+
+            #clk40 = platform.request("clk40")
+            #pll.register_clkin(clk40, 40e6)
+            pll.register_clkin(self.cd_sys.clk, 100e6)
+            pll.create_clkout(self.cd_idelay, 200e6)
+
+            self.idelayctrl = S7IDELAYCTRL(self.cd_idelay)
+    
 
 # BaseSoC ------------------------------------------------------------------------------------------
 
