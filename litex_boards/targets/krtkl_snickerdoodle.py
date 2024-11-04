@@ -78,7 +78,7 @@ class BaseSoC(SoCCore):
     def __init__(self, variant="z7-20", toolchain="vivado", sys_clk_freq=125e6,
             with_led_chaser = True,
             **kwargs):
-        platform = krtkl_snickerdoodle.Platform(variant=variant, toolchain=kwargs['toolchain'])
+        platform = krtkl_snickerdoodle.Platform(variant=variant, toolchain=toolchain)
 
         # CRG --------------------------------------------------------------------------------------
         use_ps7_clk = (kwargs.get("cpu_type", None) == "zynq7000")
@@ -95,7 +95,7 @@ class BaseSoC(SoCCore):
 
         # Zynq7000 Integration ---------------------------------------------------------------------
         if kwargs.get("cpu_type", None) == "zynq7000":
-            assert toolchain == "vivado", ' not tested / specific vivado cmds'
+            assert toolchain in ('vivado', 'openxc7',)
 
             self.cpu.set_ps7(name="Zynq",
                 config={
