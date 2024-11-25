@@ -68,7 +68,7 @@ class _CRG(LiteXModule):
         if True:  # stuff for ethernet phy clock, overlaps with NOT ps7 block above
             # s7rgmii needs this because it uses IDELAY blocks
             self.pll = pll = S7MMCM(speedgrade=-2)
-            self.comb += pll.reset.eq(self.rst)
+            #self.comb += pll.reset.eq(self.rst)
 
             #clk40 = platform.request("clk40")
             #pll.register_clkin(clk40, 40e6)
@@ -86,6 +86,7 @@ class BaseSoC(SoCCore):
             with_led_chaser = True,
             with_ethernet = False,
             with_etherbone = False,
+            ethphy_force = False,
             eth_ip = "192.168.1.50",
             **kwargs):
         platform = antsdr_e200.Platform(toolchain=toolchain)
@@ -115,23 +116,30 @@ class BaseSoC(SoCCore):
 
             self.bus.add_region("sram", SoCRegion(
                 origin = self.cpu.mem_map["sram"],
-                size   = 512 * MEGABYTE - self.cpu.mem_map["sram"])
+                size   = 192000)
             )
-            self.bus.add_region("rom", SoCRegion(
-                origin = self.cpu.mem_map["rom"],
-                size   = 256 * MEGABYTE // 8,
-                linker = True)
-            )
-            self.constants["CONFIG_CLOCK_FREQUENCY"] = 666666687
-            self.bus.add_region("flash",  SoCRegion(origin=0xFC00_0000, size=0x4_0000, mode="rwx"))
+            #self.bus.add_region("rom", SoCRegion(
+            #    origin = self.cpu.mem_map["rom"],
+            #    size   = 256 * MEGABYTE // 8,
+            #    linker = True)
+            #)
+            self.constants["CONFIG_CLOCK_FREQUENCY"] = 666666687 # not correct for 7020
+            #self.bus.add_region("flash",  SoCRegion(origin=0xFC00_0000, size=0x4_0000, mode="rwx"))
 
         # Ethernet ---------------------------------------------------------------------------------
         # not working currently
-        if with_ethernet or with_etherbone:
+        if with_ethernet or with_etherbone or ethphy_force:
             self.ethphy = LiteEthPHYRGMII(
-                clock_pads = self.platform.request("eth_clocks"),
-                pads       = self.platform.request("eth"),
-                tx_delay   = 0e-9)
+                clock_pads          = self.platform.request("eth_clocks"),
+                pads                = self.platform.request("eth"),
+                #tx_delay            = 0e-9,
+                with_hw_init_reset  = True,
+            )
+
+            # tying this high until i can figure out how to get liteeth to drive it correctly
+            # self.comb += self.platform.request("eth_rst").eq(1)
+            #self.comb += self.platform.request("eth_rst").eq(~self.crg.rst)
+
             if with_ethernet:
                 self.add_ethernet(phy=self.ethphy, data_width=32)
             if with_etherbone:
@@ -218,6 +226,7 @@ def main():
     ethopts = parser.target_group.add_mutually_exclusive_group()
     ethopts.add_argument("--with-ethernet",  action="store_true", help="Enable Ethernet support.")
     ethopts.add_argument("--with-etherbone", action="store_true", help="Enable Etherbone support.")
+    ethopts.add_argument("--ethphy-force", action="store_true", help="Force insertion of ethphy for testing even though other eth options are not used.")
     parser.add_target_argument("--eth-ip",            default="192.168.1.50", help="Ethernet/Etherbone IP address.")
     parser.set_defaults(cpu_type="zynq7000")
     parser.set_defaults(no_uart=True)
@@ -229,6 +238,7 @@ def main():
         sys_clk_freq = args.sys_clk_freq,
         with_ethernet          = args.with_ethernet,
         with_etherbone         = args.with_etherbone,
+        ethphy_force           = args.ethphy_force,
         eth_ip           = args.eth_ip,
         **parser.soc_argdict
     )

@@ -37,7 +37,6 @@ _io = [
         Subsignal("vrp",     Pins(1)),
     ),
 
-    #("eth_ref_clk", 0, Pins("G18"), IOStandard("LVCMOS33")), # ???
 
     ("eth_clocks", 0,
         Subsignal("tx", Pins("D18")),
@@ -45,7 +44,7 @@ _io = [
         IOStandard("LVCMOS18"),
     ),
     ("eth", 0,
-        Subsignal("rst_n",   Pins("B19")),
+        # Subsignal("rst_n",   Pins("B19")), # the hackery continues, s7rgmii module drives this incorrectly
         Subsignal("mdio",    Pins("A20")),
         Subsignal("mdc",     Pins("B20")),
         Subsignal("rx_ctl",  Pins("G17")),
@@ -54,6 +53,8 @@ _io = [
         Subsignal("tx_data", Pins("F19 D20 D19 C20")),
         IOStandard("LVCMOS18")
     ),
+    ("eth_rst", 0, Pins("B19"), IOStandard("LVCMOS18")),
+
     # have one led hooked up to the first gpio
     ("led", 0, Pins("V5"), IOStandard("LVCMOS33")),
 
