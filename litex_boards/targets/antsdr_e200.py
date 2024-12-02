@@ -165,7 +165,7 @@ class BaseSoC(SoCCore):
             #platform.add_extension(_gpio)
 
             self.leds = LedChaser(
-                pads         = platform.request_all("led"),
+                pads         = platform.request_all("user_led"),
                 sys_clk_freq = sys_clk_freq)
 
     def finalize(self, *args, **kwargs):
