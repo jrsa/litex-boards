@@ -69,22 +69,24 @@ _io = [
     # and that is what the core requires.
     ("ad9361_rfic", 0,
         Subsignal("rx_clk_p",   Pins("N20"),                     IOStandard("LVCMOS18"), ), # RF_DATA_CLK_P.
-        Subsignal("rx_clk_n",   Pins("P20"),                     IOStandard("LVCMOS18"), ), # RF_DATA_CLK_N.
+        #Subsignal("rx_clk_n",   Pins("P20"),                     IOStandard("LVCMOS18"), ), # RF_DATA_CLK_N.
         Subsignal("rx_frame_p", Pins("Y16"),                     IOStandard("LVCMOS18"), ), # RX_FRAME_P.
-        Subsignal("rx_frame_n", Pins("Y17"),                     IOStandard("LVCMOS18"), ), # RX_FRAME_N.
-        Subsignal("rx_data_p",  Pins("Y18 V17 W18 R16 V20 W14"), IOStandard("LVCMOS18"), ), # RX_DATA_P0-5.
-        Subsignal("rx_data_n",  Pins("Y19 V18 W19 R17 W20 Y14"), IOStandard("LVCMOS18"), ), # RX_DATA_N0-5.
+        #Subsignal("rx_frame_n", Pins("Y17"),                     IOStandard("LVCMOS18"), ), # RX_FRAME_N.
+
+        # P1 (RX)
+        Subsignal("rx_data",  Pins("Y19 Y18 V18 V17 W19 W18 R17 R16 W20 V20 Y14 W14"), IOStandard("LVCMOS18"), ),
 
         Subsignal("tx_clk_p",   Pins("N18"),                     IOStandard("LVCMOS18"), ), # RF_FB_CLK_P.
         Subsignal("tx_clk_n",   Pins("P19"),                     IOStandard("LVCMOS18"), ), # RF_FB_CLK_N.
         Subsignal("tx_frame_p", Pins("V16"),                     IOStandard("LVCMOS18"), ), # TX_FRAME_P.
         Subsignal("tx_frame_n", Pins("W16"),                     IOStandard("LVCMOS18"), ), # TX_FRAME_N.
-        Subsignal("tx_data_p",  Pins("T16 U18 U14 V12 T12 V15"), IOStandard("LVCMOS18"), ), # TX_DATA_P_0-5.
-        Subsignal("tx_data_n",  Pins("U17 U19 U15 W13 U12 W15"), IOStandard("LVCMOS18"), ), # TX_DATA_N_0-5.
+
+        # P0 (TX)
+        Subsignal("tx_data",  Pins("U17 T16 U19 U18 U15 U14 W13 V12 U12 T12 W15 V15"), IOStandard("LVCMOS18"), ),
 
         Subsignal("rst_n",  Pins("T17"), IOStandard("LVCMOS18")), # RF_RESET_N.
         Subsignal("enable", Pins("R18"), IOStandard("LVCMOS18")), # RF_ENABLE.
-        Subsignal("txnrx",  Pins("W17"), IOStandard("LVCMOS18")), # RF_RXTX.
+        Subsignal("txnrx",  Pins("N17"), IOStandard("LVCMOS18")), # RF_RXTX.
         Subsignal("en_agc", Pins("P16"), IOStandard("LVCMOS18")), # RF_EN_AGC.
 
         Subsignal("ctrl", Pins("U13 T14 V13 T11"),                 IOStandard("LVCMOS18")), # RF_CTRL_IN_ 0-3.
